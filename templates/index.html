@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,10 +8,13 @@
     <!-- Google Fonts & FontAwesome -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
+
 <body class="dark-theme">
     <div class="app-container">
         <!-- Top Navigation Header -->
@@ -58,11 +62,11 @@
 
         <!-- Tab Contents -->
         <main class="content-area">
-            
+
             <!-- TAB 1: VCT FUSION RECORDER (DEDICATED USER-FRIENDLY INTERFACE) -->
             <section id="tab-recorder" class="tab-content active">
                 <div class="recorder-layout">
-                    
+
                     <!-- Form Input Card -->
                     <div class="card recorder-card" id="recorderFormCard">
                         <div class="card-header">
@@ -73,25 +77,31 @@
                             <form id="formVctRecorder">
                                 <!-- Question 1: Label -->
                                 <div class="form-group label-group">
-                                    <label for="vctLabel"><i class="fa-solid fa-tag"></i> 1. Enter Recording Label:</label>
-                                    <input type="text" id="vctLabel" class="form-control form-control-lg" value="Kikaya Test" placeholder="e.g. idling, misfire, knocking, healthy..." required>
-                                    
+                                    <label for="vctLabel"><i class="fa-solid fa-tag"></i> 1. Enter Recording
+                                        Label:</label>
+                                    <input type="text" id="vctLabel" class="form-control form-control-lg"
+                                        placeholder="e.g. idling, misfire, knocking, healthy..." required>
+
                                     <div class="quick-chip-labels">
                                         <span class="chip-title">Quick Presets:</span>
                                         <button type="button" class="btn-chip" data-val="idling">idling</button>
                                         <button type="button" class="btn-chip" data-val="misfire">misfire</button>
                                         <button type="button" class="btn-chip" data-val="knocking">knocking</button>
                                         <button type="button" class="btn-chip" data-val="healthy">healthy</button>
-                                        <button type="button" class="btn-chip active" data-val="Kikaya Test">Kikaya Test</button>
+                                        <button type="button" class="btn-chip active" data-val="Kikaya Test">Kikaya
+                                            Test</button>
                                     </div>
                                 </div>
 
                                 <!-- Question 2: Duration -->
                                 <div class="form-group duration-group">
-                                    <label for="vctDuration"><i class="fa-solid fa-clock"></i> 2. Enter Duration (Seconds):</label>
+                                    <label for="vctDuration"><i class="fa-solid fa-clock"></i> 2. Enter Duration
+                                        (Seconds):</label>
                                     <div class="duration-controls">
-                                        <input type="number" id="vctDuration" class="form-control duration-number" value="20" min="5" max="300" required>
-                                        <input type="range" id="vctDurationRange" class="duration-range-slider" value="20" min="5" max="120" step="1">
+                                        <input type="number" id="vctDuration" class="form-control duration-number"
+                                            value="20" min="5" max="300" required>
+                                        <input type="range" id="vctDurationRange" class="duration-range-slider"
+                                            value="20" min="5" max="120" step="1">
                                     </div>
 
                                     <div class="quick-chip-durations">
@@ -167,7 +177,8 @@
                         </div>
                         <div class="success-body">
                             <div class="output-files-box">
-                                <h4><i class="fa-solid fa-file-export"></i> Saved Output Files in <code>~/VCT/vehicle_data/</code></h4>
+                                <h4><i class="fa-solid fa-file-export"></i> Saved Output Files in
+                                    <code>~/VCT/vehicle_data/</code></h4>
                                 <div class="file-link-row">
                                     <i class="fa-solid fa-file-audio audio-icon"></i>
                                     <span id="outAudioName">vehicle_data/data_Kikaya Test.wav</span>
@@ -196,7 +207,8 @@
                         </div>
                         <div class="card-body mini-term-body" id="miniTerminalBody" style="display:none;">
                             <div class="terminal-body" id="vctTerminalOutput">
-                                <div class="term-line term-sys">Ready to record. Click "START FUSION RECORDING" above.</div>
+                                <div class="term-line term-sys">Ready to record. Click "START FUSION RECORDING" above.
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -228,7 +240,8 @@
 
                             <div class="form-group">
                                 <label for="scriptArgs">Command Line Arguments (Optional):</label>
-                                <input type="text" id="scriptArgs" class="form-control" placeholder="e.g. --mode test --verbose">
+                                <input type="text" id="scriptArgs" class="form-control"
+                                    placeholder="e.g. --mode test --verbose">
                             </div>
 
                             <div class="action-buttons">
@@ -273,7 +286,8 @@
                         </div>
                         <div class="terminal-body" id="terminalOutput">
                             <div class="term-line term-sys">Welcome to Raspberry Pi VCT Web Controller.</div>
-                            <div class="term-line term-sys">Click "Connect SSH" or select a Python script from ~/VCT to start execution.</div>
+                            <div class="term-line term-sys">Click "Connect SSH" or select a Python script from ~/VCT to
+                                start execution.</div>
                         </div>
 
                         <!-- Interactive Terminal Input Bar -->
@@ -288,7 +302,8 @@
                             </div>
                             <div class="input-form">
                                 <span class="term-prompt-symbol"><i class="fa-solid fa-chevron-right"></i></span>
-                                <input type="text" id="terminalInput" class="terminal-input-field" placeholder="Type answer for Python script prompt and press Enter..." disabled>
+                                <input type="text" id="terminalInput" class="terminal-input-field"
+                                    placeholder="Type answer for Python script prompt and press Enter..." disabled>
                                 <button class="btn btn-primary btn-sm" id="btnSendInput" disabled>
                                     <i class="fa-solid fa-paper-plane"></i> Send
                                 </button>
@@ -305,11 +320,13 @@
                     <div class="card explorer-card">
                         <div class="card-header">
                             <h3><i class="fa-solid fa-folder-tree"></i> Files in <code>~/VCT</code></h3>
-                            <button class="btn btn-icon" id="btnRefreshFiles"><i class="fa-solid fa-rotate"></i></button>
+                            <button class="btn btn-icon" id="btnRefreshFiles"><i
+                                    class="fa-solid fa-rotate"></i></button>
                         </div>
                         <div class="card-body">
                             <div class="file-list" id="fileList">
-                                <div class="loading-spinner"><i class="fa-solid fa-spinner fa-spin"></i> Loading directory...</div>
+                                <div class="loading-spinner"><i class="fa-solid fa-spinner fa-spin"></i> Loading
+                                    directory...</div>
                             </div>
                         </div>
                     </div>
@@ -328,7 +345,9 @@
                             </div>
                         </div>
                         <div class="card-body editor-body">
-                            <textarea id="codeTextarea" class="code-editor" placeholder="Select a script file from the sidebar to view or edit its code..." readonly></textarea>
+                            <textarea id="codeTextarea" class="code-editor"
+                                placeholder="Select a script file from the sidebar to view or edit its code..."
+                                readonly></textarea>
                         </div>
                     </div>
                 </div>
@@ -394,7 +413,8 @@
                         <h3><i class="fa-solid fa-terminal"></i> System Diagnostics Summary</h3>
                     </div>
                     <div class="card-body">
-                        <pre class="raw-output" id="rawStatsOutput">Click "Refresh Now" to load Pi system information...</pre>
+                        <pre class="raw-output"
+                            id="rawStatsOutput">Click "Refresh Now" to load Pi system information...</pre>
                     </div>
                 </div>
             </section>
@@ -410,8 +430,10 @@
                             <div class="form-row">
                                 <div class="form-group col-8">
                                     <label for="cfgHost">Host / IP Address:</label>
-                                    <input type="text" id="cfgHost" class="form-control" value="research.local" required>
-                                    <small class="form-hint">Host e.g. <code>research.local</code> or IP <code>172.20.10.9</code></small>
+                                    <input type="text" id="cfgHost" class="form-control" value="research.local"
+                                        required>
+                                    <small class="form-hint">Host e.g. <code>research.local</code> or IP
+                                        <code>172.20.10.9</code></small>
                                 </div>
                                 <div class="form-group col-4">
                                     <label for="cfgPort">SSH Port:</label>
@@ -427,7 +449,8 @@
                                 <div class="form-group col-6">
                                     <label for="cfgPass">Password:</label>
                                     <div class="password-input-group">
-                                        <input type="password" id="cfgPass" class="form-control" value="vct@43" required>
+                                        <input type="password" id="cfgPass" class="form-control" value="vct@43"
+                                            required>
                                         <button type="button" class="btn btn-ghost" id="btnTogglePass">
                                             <i class="fa-solid fa-eye"></i>
                                         </button>
@@ -458,4 +481,5 @@
 
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
+
 </html>
