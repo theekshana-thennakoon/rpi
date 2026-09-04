@@ -426,6 +426,10 @@
                         <h3><i class="fa-solid fa-key"></i> Raspberry Pi SSH Connection Configuration</h3>
                     </div>
                     <div class="card-body">
+                        <div class="alert alert-warning mb-3" style="background: rgba(234, 179, 8, 0.1); border: 1px solid rgba(234, 179, 8, 0.3); border-radius: 8px; padding: 12px; font-size: 0.88rem; color: #fde047;">
+                            <i class="fa-solid fa-cloud"></i> <strong>Vercel / Cloud Hosting Tip:</strong><br>
+                            If running on Vercel, <code>research.local</code> times out because Vercel is in the cloud. Use a free public SSH tunnel like <strong>Ngrok</strong> (<code>ngrok tcp 22</code>) or <strong>Cloudflare Tunnel</strong> and paste your public host & port below.
+                        </div>
                         <form id="formSshSettings">
                             <div class="form-row">
                                 <div class="form-group col-8">

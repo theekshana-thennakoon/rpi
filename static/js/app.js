@@ -158,7 +158,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadScriptsAndFiles();
             } else {
                 updateConnectionUI(false);
-                showToast(data.message, 'error');
+                let errStr = data.message || 'Connection failed';
+                if (errStr.toLowerCase().includes('timed out') || errStr.toLowerCase().includes('refused')) {
+                    errStr += '. (Tip: On Vercel, research.local cannot be reached directly. Please use Ngrok or a public host in SSH Settings)';
+                }
+                showToast(errStr, 'error');
             }
         } catch (err) {
             updateConnectionUI(false);
