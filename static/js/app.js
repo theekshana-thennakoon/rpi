@@ -75,12 +75,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Settings Form
         formSshSettings: document.getElementById('formSshSettings'),
+        cfgBackendUrl: document.getElementById('cfgBackendUrl'),
+        btnSetLocalBackend: document.getElementById('btnSetLocalBackend'),
         cfgHost: document.getElementById('cfgHost'),
         cfgPort: document.getElementById('cfgPort'),
         cfgUser: document.getElementById('cfgUser'),
         cfgPass: document.getElementById('cfgPass'),
         btnTogglePass: document.getElementById('btnTogglePass')
     };
+
+    // Custom Backend URL State (For Vercel/Railway Direct Wi-Fi Connection)
+    let customBackendUrl = localStorage.getItem('vct_backend_url') || '';
+    if (DOM.cfgBackendUrl) {
+        DOM.cfgBackendUrl.value = customBackendUrl;
+        DOM.cfgBackendUrl.addEventListener('change', () => {
+            customBackendUrl = DOM.cfgBackendUrl.value.trim();
+            localStorage.setItem('vct_backend_url', customBackendUrl);
+        });
+    }
+    if (DOM.btnSetLocalBackend) {
+        DOM.btnSetLocalBackend.addEventListener('click', () => {
+            const targetHost = DOM.cfgHost ? DOM.cfgHost.value.trim() : '192.168.8.173';
+            const localUrl = `http://${targetHost}:5000`;
+            DOM.cfgBackendUrl.value = localUrl;
+            customBackendUrl = localUrl;
+            localStorage.setItem('vct_backend_url', customBackendUrl);
+            showToast(`Backend API set to ${localUrl}`, 'info');
+        });
+    }
+
+    function getApiUrl(endpoint) {
+        if (customBackendUrl) {
+            const base = customBackendUrl.replace(/\/+$/, '');
+            return `${base}${endpoint}`;
+        }
+        return endpoint;
+    }
 
     // VCT Recorder Timer State
     let vctTimerInterval = null;
@@ -145,7 +175,44 @@ document.addEventListener('DOMContentLoaded', () => {
             updateConnectionUI(false);
             showToast('Connecting to Raspberry Pi...', 'info');
             
-            const res = await fetch('/api/connect', {
+            const isCloudEnv = !['localhost', '127.0.0.1'].includes(window.location.hostname);
+            const hostLower = (host || '').toLowerCase();
+            const isLocalHostOrIP = hostLower.includes('192.168.') || 
+                                    hostLower.includes('172.') || 
+                                    hostLower.includes('10.') || 
+                                    hostLower.endsWith('.local') || 
+                                    hostLower === 'localhost';
+
+            // Auto-Probe: If hosted on Vercel/Railway and user hasn't set customBackendUrl, check if Pi local backend on port 5000 is reachable from browser!
+            if (isCloudEnv && isLocalHostOrIP && !customBackendUrl) {
+                const probeUrl = `http://${host}:5000/api/connect`;
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 2500);
+                    const probeRes = await fetch(probeUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ host: '127.0.0.1', port, username, password }),
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+                    const probeData = await probeRes.json();
+                    if (probeData.status === 'success') {
+                        customBackendUrl = `http://${host}:5000`;
+                        if (DOM.cfgBackendUrl) DOM.cfgBackendUrl.value = customBackendUrl;
+                        localStorage.setItem('vct_backend_url', customBackendUrl);
+                        updateConnectionUI(true, probeData.host || host);
+                        showToast('Connected via Direct Local Wi-Fi Backend!', 'success');
+                        loadScriptsAndFiles();
+                        if (typeof Swal !== 'undefined' && Swal.isVisible()) Swal.close();
+                        return;
+                    }
+                } catch (probeErr) {
+                    console.log('Local Wi-Fi backend probe skipped:', probeErr);
+                }
+            }
+
+            const res = await fetch(getApiUrl('/api/connect'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ host, port, username, password })
@@ -187,7 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // SCENARIO 1: Site hosted on Vercel / Railway trying to reach local IP or .local
         if (isCloudEnv && isLocalHostOrIP) {
             Swal.fire({
-                title: '☁️ Vercel / Railway Connection Guide',
+                title: '☁️ Vercel / Railway Wi-Fi Connection Guide',
                 customClass: {
                     popup: 'swal-dark-popup',
                     confirmButton: 'btn-swal-primary',
@@ -198,21 +265,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 html: `
                     <div style="font-size: 0.9rem; line-height: 1.5; color: var(--text-main);">
                         <p style="margin-bottom: 10px;">
-                            <strong>Why did connection to <code>${host}</code> fail?</strong><br>
-                            Your app is running in the cloud (<strong>Vercel / Railway</strong>), but <code>${host}</code> is a private local IP hidden behind your home router firewall.
+                            You opened the app on <strong>Vercel / Railway</strong>, and your device & Pi are on the <strong>same Wi-Fi network</strong>!
                         </p>
 
-                        <div class="swal-guide-box">
-                            <div class="swal-guide-title"><i class="fa-solid fa-bolt"></i> Quick Solution (Connect Pi to Cloud):</div>
+                        <div class="swal-guide-box" style="margin-bottom: 12px;">
+                            <div class="swal-guide-title"><i class="fa-solid fa-wifi"></i> Option 1: Direct Local Wi-Fi Mode (Recommended)</div>
                             <div class="swal-step">
-                                <strong>1. Run this tunnel on your Raspberry Pi terminal:</strong><br>
-                                <code class="swal-code-badge">ngrok tcp 22</code>
-                                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">
-                                    <em>(Or no installation: <code class="swal-code-badge">ssh -R 0:localhost:22 a.pinggy.io</code>)</em>
-                                </div>
+                                <strong>1. Run <code>server.py</code> on your Raspberry Pi:</strong><br>
+                                <code class="swal-code-badge">python3 server.py</code>
                             </div>
-                            <div class="swal-step" style="margin-top: 8px;">
-                                <strong>2. Paste the generated public Host & Port below:</strong>
+                            <div class="swal-step" style="margin-top: 6px;">
+                                <strong>2. Click below to route requests directly on your Wi-Fi:</strong>
+                            </div>
+                            <button type="button" class="btn btn-primary btn-sm" id="btnSwalUseLocalBackend" style="margin-top: 6px; width: 100%; font-weight: 600; padding: 8px;">
+                                <i class="fa-solid fa-bolt"></i> Use Local Pi Backend (http://${host}:5000)
+                            </button>
+                        </div>
+
+                        <div class="swal-guide-box">
+                            <div class="swal-guide-title"><i class="fa-solid fa-cloud"></i> Option 2: Remote Tunnel Mode</div>
+                            <div class="swal-step">
+                                Run on Pi: <code class="swal-code-badge">ngrok tcp 22</code> (or <code class="swal-code-badge">ssh -R 0:localhost:22 a.pinggy.io</code>) and paste the public Host & Port below:
                             </div>
                             <div class="swal-input-group">
                                 <input type="text" id="swalPublicHost" class="swal-input-field" placeholder="Host (e.g. 4.tcp.ngrok.io)">
@@ -222,14 +295,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `,
                 showCancelButton: true,
-                confirmButtonText: '<i class="fa-solid fa-plug"></i> Save & Connect SSH',
+                confirmButtonText: '<i class="fa-solid fa-plug"></i> Connect Tunnel Host',
                 cancelButtonText: 'Dismiss',
                 focusConfirm: false,
+                didOpen: () => {
+                    const btnLocal = document.getElementById('btnSwalUseLocalBackend');
+                    if (btnLocal) {
+                        btnLocal.addEventListener('click', () => {
+                            customBackendUrl = `http://${host}:5000`;
+                            if (DOM.cfgBackendUrl) DOM.cfgBackendUrl.value = customBackendUrl;
+                            localStorage.setItem('vct_backend_url', customBackendUrl);
+                            Swal.close();
+                            testConnection(host, port, username, password);
+                        });
+                    }
+                },
                 preConfirm: () => {
                     const newHost = document.getElementById('swalPublicHost').value.trim();
                     const newPort = document.getElementById('swalPublicPort').value.trim();
                     if (!newHost || !newPort) {
-                        Swal.showValidationMessage('Please enter both public Host and Port!');
+                        Swal.showValidationMessage('Please enter public Host and Port for Tunnel mode, or click Option 1!');
                         return false;
                     }
                     return { newHost, newPort };
@@ -237,6 +322,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }).then((result) => {
                 if (result.isConfirmed && result.value) {
                     const { newHost, newPort } = result.value;
+                    customBackendUrl = '';
+                    if (DOM.cfgBackendUrl) DOM.cfgBackendUrl.value = '';
+                    localStorage.removeItem('vct_backend_url');
                     DOM.cfgHost.value = newHost;
                     DOM.cfgPort.value = newPort;
                     testConnection(newHost, newPort, username, password);
@@ -359,7 +447,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- SCRIPT & FILE LISTING ---
     async function loadScriptsAndFiles() {
         try {
-            const res = await fetch('/api/scripts');
+            const res = await fetch(getApiUrl('/api/scripts'));
             const data = await res.json();
 
             if (data.status !== 'success') {
@@ -455,7 +543,7 @@ document.addEventListener('DOMContentLoaded', () => {
             DOM.codeTextarea.readOnly = true;
             DOM.btnSaveFile.disabled = true;
 
-            const res = await fetch(`/api/file/read?path=${encodeURIComponent(filePath)}`);
+            const res = await fetch(getApiUrl(`/api/file/read?path=${encodeURIComponent(filePath)}`));
             const data = await res.json();
 
             if (data.status === 'success') {
@@ -479,7 +567,7 @@ document.addEventListener('DOMContentLoaded', () => {
             DOM.btnSaveFile.disabled = true;
             DOM.btnSaveFile.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
 
-            const res = await fetch('/api/file/save', {
+            const res = await fetch(getApiUrl('/api/file/save'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -553,7 +641,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         appendLogLine(`=== Launching ${script} ===`, 'sys');
 
-        const sseUrl = `/api/stream_run?script=${encodeURIComponent(script)}&args=${encodeURIComponent(args)}&exec_id=${currentExecId}`;
+        const sseUrl = getApiUrl(`/api/stream_run?script=${encodeURIComponent(script)}&args=${encodeURIComponent(args)}&exec_id=${currentExecId}`);
         activeEventSource = new EventSource(sseUrl);
 
         activeEventSource.onmessage = (e) => {
@@ -592,7 +680,7 @@ document.addEventListener('DOMContentLoaded', () => {
         appendLogLine(`> ${valToSend}`, 'in');
 
         try {
-            const res = await fetch('/api/send_input', {
+            const res = await fetch(getApiUrl('/api/send_input'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ exec_id: currentExecId, input: valToSend })
@@ -631,7 +719,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast('Sending stop signal to Pi...', 'info');
 
         try {
-            await fetch('/api/stop_run', {
+            await fetch(getApiUrl('/api/stop_run'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ script: script, exec_id: currentExecId })
@@ -660,7 +748,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- PI SYSTEM MONITOR ---
     async function fetchSystemInfo() {
         try {
-            const res = await fetch('/api/system_info');
+            const res = await fetch(getApiUrl('/api/system_info'));
             const data = await res.json();
 
             if (data.status === 'success') {
@@ -767,7 +855,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Start SSE Stream to /api/run_vct
         const execId = 'vct_' + Date.now();
-        const url = `/api/run_vct?label=${encodeURIComponent(label)}&duration=${duration}&exec_id=${execId}`;
+        const url = getApiUrl(`/api/run_vct?label=${encodeURIComponent(label)}&duration=${duration}&exec_id=${execId}`);
         vctEventSource = new EventSource(url);
 
         let audioPath = `vehicle_data/data_${label}.wav`;
@@ -833,7 +921,7 @@ document.addEventListener('DOMContentLoaded', () => {
     DOM.btnCancelRecording.addEventListener('click', async () => {
         showToast('Stopping recording on Pi...', 'info');
         try {
-            await fetch('/api/stop_run', {
+            await fetch(getApiUrl('/api/stop_run'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ script: 'vct.py' })

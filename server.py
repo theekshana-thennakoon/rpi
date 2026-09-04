@@ -36,7 +36,7 @@ def get_ssh_client(host=None, port=None, username=None, password=None, timeout=5
     
     # Candidate hosts to try in order
     candidates = [target_host]
-    for fallback in ["192.168.8.173", "research.local", "172.20.10.9"]:
+    for fallback in ["127.0.0.1", "192.168.8.173", "192.168.8.102", "research.local", "172.20.10.9"]:
         if fallback not in candidates:
             candidates.append(fallback)
             
