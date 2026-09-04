@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raspberry Pi VCT - SSH & Python Runner</title>
+    <!-- Google Fonts & FontAwesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="dark-theme">
+    <div class="app-container">
+        <!-- Top Navigation Header -->
+        <header class="app-header">
+            <div class="brand">
+                <div class="brand-icon"><i class="fa-brands fa-raspberry-pi"></i></div>
+                <div class="brand-text">
+                    <h1>Raspberry Pi Controller</h1>
+                    <span class="sub-text">Directory: <code id="headerWorkingDir">/home/vct/VCT</code></span>
+                </div>
+            </div>
+
+            <div class="header-status">
+                <div class="status-badge disconnected" id="connectionBadge">
+                    <span class="status-dot"></span>
+                    <span class="status-label" id="connectionLabel">Disconnected</span>
+                </div>
+                <div class="host-pill" id="hostPill">
+                    <i class="fa-solid fa-server"></i> research.local
+                </div>
+                <button class="btn btn-primary btn-sm" id="btnQuickConnect">
+                    <i class="fa-solid fa-plug"></i> Connect SSH
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Navigation Tabs -->
+        <nav class="app-tabs">
+            <button class="tab-btn active" data-tab="tab-recorder">
+                <i class="fa-solid fa-microphone-lines"></i> VCT Fusion Recorder
+            </button>
+            <button class="tab-btn" data-tab="tab-runner">
+                <i class="fa-solid fa-play"></i> Script Selector & Terminal
+            </button>
+            <button class="tab-btn" data-tab="tab-editor">
+                <i class="fa-solid fa-code"></i> Code Editor & Files
+            </button>
+            <button class="tab-btn" data-tab="tab-monitor">
+                <i class="fa-solid fa-chart-line"></i> Pi System Monitor
+            </button>
+            <button class="tab-btn" data-tab="tab-settings">
+                <i class="fa-solid fa-sliders"></i> SSH Settings
+            </button>
+        </nav>
+
+        <!-- Tab Contents -->
+        <main class="content-area">
+            
+            <!-- TAB 1: VCT FUSION RECORDER (DEDICATED USER-FRIENDLY INTERFACE) -->
+            <section id="tab-recorder" class="tab-content active">
+                <div class="recorder-layout">
+                    
+                    <!-- Form Input Card -->
+                    <div class="card recorder-card" id="recorderFormCard">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-car-side"></i> Vehicle Audio & Vibration Fusion Setup</h3>
+                            <span class="script-badge">Running: <code>vct.py</code></span>
+                        </div>
+                        <div class="card-body">
+                            <form id="formVctRecorder">
+                                <!-- Question 1: Label -->
+                                <div class="form-group label-group">
+                                    <label for="vctLabel"><i class="fa-solid fa-tag"></i> 1. Enter Recording Label:</label>
+                                    <input type="text" id="vctLabel" class="form-control form-control-lg" value="Kikaya Test" placeholder="e.g. idling, misfire, knocking, healthy..." required>
+                                    
+                                    <div class="quick-chip-labels">
+                                        <span class="chip-title">Quick Presets:</span>
+                                        <button type="button" class="btn-chip" data-val="idling">idling</button>
+                                        <button type="button" class="btn-chip" data-val="misfire">misfire</button>
+                                        <button type="button" class="btn-chip" data-val="knocking">knocking</button>
+                                        <button type="button" class="btn-chip" data-val="healthy">healthy</button>
+                                        <button type="button" class="btn-chip active" data-val="Kikaya Test">Kikaya Test</button>
+                                    </div>
+                                </div>
+
+                                <!-- Question 2: Duration -->
+                                <div class="form-group duration-group">
+                                    <label for="vctDuration"><i class="fa-solid fa-clock"></i> 2. Enter Duration (Seconds):</label>
+                                    <div class="duration-controls">
+                                        <input type="number" id="vctDuration" class="form-control duration-number" value="20" min="5" max="300" required>
+                                        <input type="range" id="vctDurationRange" class="duration-range-slider" value="20" min="5" max="120" step="1">
+                                    </div>
+
+                                    <div class="quick-chip-durations">
+                                        <button type="button" class="btn-chip-dur" data-val="10">10 sec</button>
+                                        <button type="button" class="btn-chip-dur active" data-val="20">20 sec</button>
+                                        <button type="button" class="btn-chip-dur" data-val="30">30 sec</button>
+                                        <button type="button" class="btn-chip-dur" data-val="60">60 sec</button>
+                                    </div>
+                                </div>
+
+                                <!-- Start Button -->
+                                <div class="form-actions-center">
+                                    <button type="submit" class="btn btn-fusion-start" id="btnStartVctRecording">
+                                        <i class="fa-solid fa-rocket"></i> START FUSION RECORDING
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- ANIMATED COUNTDOWN & LIVE RECORDING DASHBOARD (VISIBLE WHILE RECORDING) -->
+                    <div class="card countdown-card" id="countdownCard" style="display:none;">
+                        <div class="countdown-header">
+                            <div class="rec-badge pulsing">
+                                <span class="rec-dot"></span> REC LIVE
+                            </div>
+                            <h3 id="cdLabelTitle">Recording: Kikaya Test</h3>
+                            <button class="btn btn-danger btn-sm" id="btnCancelRecording">
+                                <i class="fa-solid fa-stop"></i> Emergency Stop
+                            </button>
+                        </div>
+
+                        <div class="countdown-body">
+                            <!-- SVG Circular Progress Bar Ring -->
+                            <div class="timer-ring-container">
+                                <svg class="timer-ring-svg" viewBox="0 0 200 200">
+                                    <circle class="ring-bg" cx="100" cy="100" r="85"></circle>
+                                    <circle class="ring-progress" id="ringProgress" cx="100" cy="100" r="85"></circle>
+                                </svg>
+                                <div class="ring-center-content">
+                                    <span class="time-big" id="cdTimeDisplay">20</span>
+                                    <span class="time-unit">SECONDS</span>
+                                </div>
+                            </div>
+
+                            <!-- Live Channel Activity Badges -->
+                            <div class="live-channels">
+                                <div class="channel-pill audio-pill pulsing-pill">
+                                    <i class="fa-solid fa-microphone"></i>
+                                    <span>AUDIO (.wav)</span>
+                                    <div class="sound-wave">
+                                        <span></span><span></span><span></span><span></span>
+                                    </div>
+                                </div>
+
+                                <div class="channel-pill vibe-pill pulsing-pill">
+                                    <i class="fa-solid fa-wave-square"></i>
+                                    <span>VIBRATION MPU-6050 (.csv)</span>
+                                    <div class="vibe-wave">
+                                        <span></span><span></span><span></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CAPTURE COMPLETE SUCCESS CARD -->
+                    <div class="card success-card" id="successCard" style="display:none;">
+                        <div class="success-header">
+                            <div class="success-icon-badge"><i class="fa-solid fa-circle-check"></i></div>
+                            <h2>FUSION CAPTURE COMPLETE!</h2>
+                            <p id="successSubtext">Audio and Vibration sensors successfully logged to Raspberry Pi.</p>
+                        </div>
+                        <div class="success-body">
+                            <div class="output-files-box">
+                                <h4><i class="fa-solid fa-file-export"></i> Saved Output Files in <code>~/VCT/vehicle_data/</code></h4>
+                                <div class="file-link-row">
+                                    <i class="fa-solid fa-file-audio audio-icon"></i>
+                                    <span id="outAudioName">vehicle_data/data_Kikaya Test.wav</span>
+                                </div>
+                                <div class="file-link-row">
+                                    <i class="fa-solid fa-file-csv csv-icon"></i>
+                                    <span id="outVibeName">vehicle_data/data_Kikaya Test.csv</span>
+                                </div>
+                            </div>
+                            <div class="success-actions">
+                                <button class="btn btn-primary btn-lg" id="btnNewRecording">
+                                    <i class="fa-solid fa-plus-circle"></i> Start New Recording
+                                </button>
+                                <button class="btn btn-ghost btn-lg" id="btnViewFilesInExplorer">
+                                    <i class="fa-solid fa-folder-open"></i> Browse Files
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Collapsible Terminal Output for vct.py -->
+                    <div class="card mini-terminal-card">
+                        <div class="card-header mini-term-header" id="btnToggleMiniTerminal">
+                            <span><i class="fa-solid fa-terminal"></i> Live SSH Terminal Output (vct.py)</span>
+                            <i class="fa-solid fa-chevron-down toggle-icon" id="miniTermToggleIcon"></i>
+                        </div>
+                        <div class="card-body mini-term-body" id="miniTerminalBody" style="display:none;">
+                            <div class="terminal-body" id="vctTerminalOutput">
+                                <div class="term-line term-sys">Ready to record. Click "START FUSION RECORDING" above.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- TAB 2: PYTHON SCRIPT RUNNER & TERMINAL -->
+            <section id="tab-runner" class="tab-content">
+                <div class="runner-grid">
+                    <!-- Control Panel -->
+                    <div class="card control-card">
+                        <div class="card-header">
+                            <h3><i class="fa-brands fa-python"></i> Select & Execute Script</h3>
+                            <button class="btn btn-icon" id="btnRefreshScripts" title="Refresh Script List">
+                                <i class="fa-solid fa-rotate"></i>
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="scriptSelect">Python File in <code>~/VCT</code>:</label>
+                                <div class="select-wrapper">
+                                    <select id="scriptSelect" class="form-control">
+                                        <option value="">-- Loading scripts... --</option>
+                                    </select>
+                                    <i class="fa-solid fa-chevron-down select-arrow"></i>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="scriptArgs">Command Line Arguments (Optional):</label>
+                                <input type="text" id="scriptArgs" class="form-control" placeholder="e.g. --mode test --verbose">
+                            </div>
+
+                            <div class="action-buttons">
+                                <button class="btn btn-success btn-lg" id="btnRunScript">
+                                    <i class="fa-solid fa-play"></i> Run Script
+                                </button>
+                                <button class="btn btn-danger btn-lg" id="btnStopScript" disabled>
+                                    <i class="fa-solid fa-square"></i> Stop Execution
+                                </button>
+                            </div>
+
+                            <!-- Quick Script Presets -->
+                            <div class="presets-section">
+                                <span class="presets-label">Found Scripts:</span>
+                                <div class="preset-pills" id="presetPills">
+                                    <span class="pill-skeleton">Scanning ~/VCT...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Terminal Output Window -->
+                    <div class="card terminal-card">
+                        <div class="terminal-header">
+                            <div class="terminal-title">
+                                <i class="fa-solid fa-terminal"></i> Real-time Output Log
+                                <span class="running-indicator" id="runningIndicator" style="display:none;">
+                                    <span class="spinner"></span> Running...
+                                </span>
+                            </div>
+                            <div class="terminal-actions">
+                                <label class="checkbox-label" title="Automatically scroll to bottom on new log">
+                                    <input type="checkbox" id="chkAutoScroll" checked> Auto-scroll
+                                </label>
+                                <button class="btn btn-ghost btn-sm" id="btnClearTerminal" title="Clear Console">
+                                    <i class="fa-solid fa-trash"></i> Clear
+                                </button>
+                                <button class="btn btn-ghost btn-sm" id="btnCopyTerminal" title="Copy Log to Clipboard">
+                                    <i class="fa-solid fa-copy"></i> Copy Log
+                                </button>
+                            </div>
+                        </div>
+                        <div class="terminal-body" id="terminalOutput">
+                            <div class="term-line term-sys">Welcome to Raspberry Pi VCT Web Controller.</div>
+                            <div class="term-line term-sys">Click "Connect SSH" or select a Python script from ~/VCT to start execution.</div>
+                        </div>
+
+                        <!-- Interactive Terminal Input Bar -->
+                        <div class="terminal-input-bar">
+                            <div class="quick-answers" id="quickAnswers">
+                                <span class="answers-label">Quick Answers:</span>
+                                <button type="button" class="btn-quick-ans" data-input="1">Option 1</button>
+                                <button type="button" class="btn-quick-ans" data-input="2">Option 2</button>
+                                <button type="button" class="btn-quick-ans" data-input="3">Option 3</button>
+                                <button type="button" class="btn-quick-ans" data-input="4">Option 4 (Healthy)</button>
+                                <button type="button" class="btn-quick-ans" data-input="30">30 seconds</button>
+                            </div>
+                            <div class="input-form">
+                                <span class="term-prompt-symbol"><i class="fa-solid fa-chevron-right"></i></span>
+                                <input type="text" id="terminalInput" class="terminal-input-field" placeholder="Type answer for Python script prompt and press Enter..." disabled>
+                                <button class="btn btn-primary btn-sm" id="btnSendInput" disabled>
+                                    <i class="fa-solid fa-paper-plane"></i> Send
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: CODE EDITOR & FILES -->
+            <section id="tab-editor" class="tab-content">
+                <div class="editor-grid">
+                    <!-- File Explorer Sidebar -->
+                    <div class="card explorer-card">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-folder-tree"></i> Files in <code>~/VCT</code></h3>
+                            <button class="btn btn-icon" id="btnRefreshFiles"><i class="fa-solid fa-rotate"></i></button>
+                        </div>
+                        <div class="card-body">
+                            <div class="file-list" id="fileList">
+                                <div class="loading-spinner"><i class="fa-solid fa-spinner fa-spin"></i> Loading directory...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Code Editor View -->
+                    <div class="card editor-main-card">
+                        <div class="card-header editor-header">
+                            <div class="file-info">
+                                <i class="fa-solid fa-file-code file-icon"></i>
+                                <span id="editingFileName">No file selected</span>
+                            </div>
+                            <div class="editor-actions">
+                                <button class="btn btn-primary" id="btnSaveFile" disabled>
+                                    <i class="fa-solid fa-floppy-disk"></i> Save to Pi
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body editor-body">
+                            <textarea id="codeTextarea" class="code-editor" placeholder="Select a script file from the sidebar to view or edit its code..." readonly></textarea>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: PI SYSTEM MONITOR -->
+            <section id="tab-monitor" class="tab-content">
+                <div class="monitor-header">
+                    <h2><i class="fa-solid fa-gauge-high"></i> Raspberry Pi Hardware Status</h2>
+                    <div class="monitor-controls">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="chkAutoRefreshStats" checked> Auto Refresh (5s)
+                        </label>
+                        <button class="btn btn-primary btn-sm" id="btnRefreshStats">
+                            <i class="fa-solid fa-rotate"></i> Refresh Now
+                        </button>
+                    </div>
+                </div>
+
+                <div class="metrics-grid">
+                    <!-- Temp Metric Card -->
+                    <div class="metric-card">
+                        <div class="metric-icon temp"><i class="fa-solid fa-temperature-high"></i></div>
+                        <div class="metric-info">
+                            <span class="metric-label">CPU Temperature</span>
+                            <span class="metric-value" id="valTemp">--</span>
+                        </div>
+                    </div>
+
+                    <!-- CPU Load Metric Card -->
+                    <div class="metric-card">
+                        <div class="metric-icon cpu"><i class="fa-solid fa-microchip"></i></div>
+                        <div class="metric-info">
+                            <span class="metric-label">CPU Usage</span>
+                            <span class="metric-value" id="valCpu">--</span>
+                        </div>
+                    </div>
+
+                    <!-- RAM Usage Card -->
+                    <div class="metric-card">
+                        <div class="metric-icon ram"><i class="fa-solid fa-memory"></i></div>
+                        <div class="metric-info">
+                            <span class="metric-label">RAM Usage</span>
+                            <span class="metric-value" id="valRam">--</span>
+                            <span class="metric-sub" id="valRamSub">-- / --</span>
+                        </div>
+                    </div>
+
+                    <!-- Disk Usage Card -->
+                    <div class="metric-card">
+                        <div class="metric-icon disk"><i class="fa-solid fa-hard-drive"></i></div>
+                        <div class="metric-info">
+                            <span class="metric-label">Disk Storage</span>
+                            <span class="metric-value" id="valDisk">--</span>
+                            <span class="metric-sub" id="valDiskSub">-- / --</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Raw System Dump -->
+                <div class="card raw-stats-card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-terminal"></i> System Diagnostics Summary</h3>
+                    </div>
+                    <div class="card-body">
+                        <pre class="raw-output" id="rawStatsOutput">Click "Refresh Now" to load Pi system information...</pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: SSH CREDENTIALS & SETTINGS -->
+            <section id="tab-settings" class="tab-content">
+                <div class="card settings-card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-key"></i> Raspberry Pi SSH Connection Configuration</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="formSshSettings">
+                            <div class="form-row">
+                                <div class="form-group col-8">
+                                    <label for="cfgHost">Host / IP Address:</label>
+                                    <input type="text" id="cfgHost" class="form-control" value="research.local" required>
+                                    <small class="form-hint">Host e.g. <code>research.local</code> or IP <code>172.20.10.9</code></small>
+                                </div>
+                                <div class="form-group col-4">
+                                    <label for="cfgPort">SSH Port:</label>
+                                    <input type="number" id="cfgPort" class="form-control" value="22" required>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group col-6">
+                                    <label for="cfgUser">Username:</label>
+                                    <input type="text" id="cfgUser" class="form-control" value="vct" required>
+                                </div>
+                                <div class="form-group col-6">
+                                    <label for="cfgPass">Password:</label>
+                                    <div class="password-input-group">
+                                        <input type="password" id="cfgPass" class="form-control" value="vct@43" required>
+                                        <button type="button" class="btn btn-ghost" id="btnTogglePass">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Target Directory:</label>
+                                <input type="text" class="form-control" value="/home/vct/VCT" readonly disabled>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary btn-lg" id="btnSaveConfig">
+                                    <i class="fa-solid fa-plug"></i> Test & Connect SSH
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
