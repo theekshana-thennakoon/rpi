@@ -129,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- SSH CONNECTION STATUS ---
-    function updateConnectionUI(connected, host = 'research.local') {
+    function updateConnectionUI(connected, host = '192.168.8.173') {
         if (connected) {
             DOM.connectionBadge.className = 'status-badge connected';
             DOM.connectionLabel.textContent = 'Connected';

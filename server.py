@@ -17,7 +17,7 @@ CORS(app)
 
 # Global SSH configuration state
 ssh_config = {
-    "host": "research.local",
+    "host": "192.168.8.173",
     "port": 22,
     "username": "vct",
     "password": "vct@43",
@@ -36,7 +36,7 @@ def get_ssh_client(host=None, port=None, username=None, password=None, timeout=5
     
     # Candidate hosts to try in order
     candidates = [target_host]
-    for fallback in ["research.local", "192.168.8.173", "172.20.10.9"]:
+    for fallback in ["192.168.8.173", "research.local", "172.20.10.9"]:
         if fallback not in candidates:
             candidates.append(fallback)
             
