@@ -1195,3 +1195,101 @@ textarea.code-editor {
 .toggle-icon.open {
     transform: rotate(180deg);
 }
+
+/* SWEETALERT2 DARK THEME STYLING */
+.swal2-popup.swal-dark-popup {
+    background-color: var(--bg-card) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-lg) !important;
+    color: var(--text-main) !important;
+    box-shadow: var(--shadow-card) !important;
+    padding: 24px !important;
+    width: 34rem !important;
+    max-width: 90vw !important;
+}
+
+.swal2-title {
+    color: var(--text-main) !important;
+    font-size: 1.25rem !important;
+    font-weight: 700 !important;
+}
+
+.swal2-html-container {
+    color: var(--text-muted) !important;
+    font-size: 0.92rem !important;
+    text-align: left !important;
+    margin: 1rem 0 !important;
+}
+
+.swal-guide-box {
+    background: rgba(11, 17, 32, 0.8);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    margin-top: 12px;
+}
+
+.swal-guide-title {
+    font-weight: 600;
+    color: var(--primary);
+    font-size: 0.88rem;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.swal-step {
+    margin-bottom: 8px;
+    font-size: 0.84rem;
+    line-height: 1.4;
+    color: var(--text-main);
+}
+
+.swal-code-badge {
+    background: #070a12;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    color: #38bdf8;
+    font-family: 'Fira Code', monospace;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.82rem;
+    user-select: all;
+}
+
+.swal-input-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.swal-input-field {
+    background: var(--bg-input) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-main) !important;
+    border-radius: var(--radius-sm) !important;
+    padding: 8px 12px !important;
+    font-size: 0.88rem !important;
+    width: 100% !important;
+    font-family: 'Fira Code', monospace !important;
+}
+
+.swal-input-field:focus {
+    border-color: var(--border-focus) !important;
+    outline: none !important;
+}
+
+.swal2-confirm.btn-swal-primary {
+    background-color: var(--primary) !important;
+    color: #000 !important;
+    font-weight: 600 !important;
+    border-radius: var(--radius-sm) !important;
+    padding: 8px 18px !important;
+}
+.swal2-cancel.btn-swal-secondary {
+    background-color: transparent !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-muted) !important;
+    border-radius: var(--radius-sm) !important;
+    padding: 8px 18px !important;
+}

@@ -156,18 +156,186 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateConnectionUI(true, data.host);
                 showToast(data.message, 'success');
                 loadScriptsAndFiles();
+                if (typeof Swal !== 'undefined' && Swal.isVisible()) {
+                    Swal.close();
+                }
             } else {
                 updateConnectionUI(false);
-                let errStr = data.message || 'Connection failed';
-                if (errStr.toLowerCase().includes('timed out') || errStr.toLowerCase().includes('refused')) {
-                    errStr += '. (Tip: On Vercel, research.local cannot be reached directly. Please use Ngrok or a public host in SSH Settings)';
-                }
-                showToast(errStr, 'error');
+                const msg = data.message || 'Connection failed';
+                showToast(msg, 'error');
+                showConnectionErrorAlert(msg, host, port, username, password);
             }
         } catch (err) {
             updateConnectionUI(false);
-            showToast('Failed to connect to backend server', 'error');
+            const msg = 'Failed to connect to backend server';
+            showToast(msg, 'error');
+            showConnectionErrorAlert(msg, host, port, username, password);
         }
+    }
+
+    function showConnectionErrorAlert(message, host, port, username, password) {
+        if (typeof Swal === 'undefined') return;
+
+        const isCloudEnv = !['localhost', '127.0.0.1'].includes(window.location.hostname);
+        const hostLower = (host || '').toLowerCase();
+        const isLocalHostOrIP = hostLower.includes('192.168.') || 
+                                hostLower.includes('172.') || 
+                                hostLower.includes('10.') || 
+                                hostLower.endsWith('.local') || 
+                                hostLower === 'localhost';
+
+        // SCENARIO 1: Site hosted on Vercel / Railway trying to reach local IP or .local
+        if (isCloudEnv && isLocalHostOrIP) {
+            Swal.fire({
+                title: '☁️ Vercel / Railway Connection Guide',
+                customClass: {
+                    popup: 'swal-dark-popup',
+                    confirmButton: 'btn-swal-primary',
+                    cancelButton: 'btn-swal-secondary'
+                },
+                icon: 'warning',
+                iconColor: '#f59e0b',
+                html: `
+                    <div style="font-size: 0.9rem; line-height: 1.5; color: var(--text-main);">
+                        <p style="margin-bottom: 10px;">
+                            <strong>Why did connection to <code>${host}</code> fail?</strong><br>
+                            Your app is running in the cloud (<strong>Vercel / Railway</strong>), but <code>${host}</code> is a private local IP hidden behind your home router firewall.
+                        </p>
+
+                        <div class="swal-guide-box">
+                            <div class="swal-guide-title"><i class="fa-solid fa-bolt"></i> Quick Solution (Connect Pi to Cloud):</div>
+                            <div class="swal-step">
+                                <strong>1. Run this tunnel on your Raspberry Pi terminal:</strong><br>
+                                <code class="swal-code-badge">ngrok tcp 22</code>
+                                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">
+                                    <em>(Or no installation: <code class="swal-code-badge">ssh -R 0:localhost:22 a.pinggy.io</code>)</em>
+                                </div>
+                            </div>
+                            <div class="swal-step" style="margin-top: 8px;">
+                                <strong>2. Paste the generated public Host & Port below:</strong>
+                            </div>
+                            <div class="swal-input-group">
+                                <input type="text" id="swalPublicHost" class="swal-input-field" placeholder="Host (e.g. 4.tcp.ngrok.io)">
+                                <input type="number" id="swalPublicPort" class="swal-input-field" placeholder="Port (e.g. 14532)" style="width: 130px !important;">
+                            </div>
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa-solid fa-plug"></i> Save & Connect SSH',
+                cancelButtonText: 'Dismiss',
+                focusConfirm: false,
+                preConfirm: () => {
+                    const newHost = document.getElementById('swalPublicHost').value.trim();
+                    const newPort = document.getElementById('swalPublicPort').value.trim();
+                    if (!newHost || !newPort) {
+                        Swal.showValidationMessage('Please enter both public Host and Port!');
+                        return false;
+                    }
+                    return { newHost, newPort };
+                }
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    const { newHost, newPort } = result.value;
+                    DOM.cfgHost.value = newHost;
+                    DOM.cfgPort.value = newPort;
+                    testConnection(newHost, newPort, username, password);
+                }
+            });
+            return;
+        }
+
+        // SCENARIO 2: Authentication Error (Password Mismatch)
+        if (message.toLowerCase().includes('authentication failed') || message.toLowerCase().includes('invalid password')) {
+            Swal.fire({
+                title: '🔑 SSH Authentication Failed',
+                customClass: {
+                    popup: 'swal-dark-popup',
+                    confirmButton: 'btn-swal-primary',
+                    cancelButton: 'btn-swal-secondary'
+                },
+                icon: 'error',
+                html: `
+                    <div style="font-size: 0.9rem; line-height: 1.5; color: var(--text-main);">
+                        <p style="margin-bottom: 10px;">Connected to <code>${host}:${port}</code>, but the login was rejected.</p>
+                        <div class="swal-guide-box">
+                            <div class="swal-step"><strong>Username:</strong> <code>${username}</code></div>
+                            <div class="swal-step"><strong>Password:</strong> Please check password (default: <code>vct@43</code>).</div>
+                        </div>
+                    </div>
+                `,
+                confirmButtonText: 'Adjust SSH Settings',
+                showCancelButton: true,
+                cancelButtonText: 'Close'
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    const settingsBtn = document.querySelector('[data-tab="tab-settings"]');
+                    if (settingsBtn) settingsBtn.click();
+                }
+            });
+            return;
+        }
+
+        // SCENARIO 3: ~/VCT Directory Missing
+        if (message.includes('~/VCT directory was not found')) {
+            Swal.fire({
+                title: '📁 ~/VCT Directory Missing',
+                customClass: {
+                    popup: 'swal-dark-popup',
+                    confirmButton: 'btn-swal-primary',
+                    cancelButton: 'btn-swal-secondary'
+                },
+                icon: 'warning',
+                iconColor: '#f59e0b',
+                html: `
+                    <div style="font-size: 0.9rem; line-height: 1.5; color: var(--text-main);">
+                        <p>SSH connected successfully, but directory <code>/home/${username}/VCT</code> was not found on your Pi!</p>
+                        <div class="swal-guide-box">
+                            <div class="swal-step">Run this command on your Raspberry Pi terminal to create it:</div>
+                            <code class="swal-code-badge">mkdir -p ~/VCT</code>
+                        </div>
+                    </div>
+                `,
+                confirmButtonText: 'Try Again',
+                showCancelButton: true,
+                cancelButtonText: 'Close'
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    testConnection(host, port, username, password);
+                }
+            });
+            return;
+        }
+
+        // SCENARIO 4: General Timeout or Network Error
+        Swal.fire({
+            title: '📡 Raspberry Pi Connection Error',
+            customClass: {
+                popup: 'swal-dark-popup',
+                confirmButton: 'btn-swal-primary',
+                cancelButton: 'btn-swal-secondary'
+            },
+            icon: 'error',
+            html: `
+                <div style="font-size: 0.9rem; line-height: 1.5; color: var(--text-main);">
+                    <p style="margin-bottom: 10px;"><strong>Message:</strong> <code>${message}</code></p>
+                    <div class="swal-guide-box">
+                        <div class="swal-guide-title"><i class="fa-solid fa-circle-question"></i> Troubleshooting Checklist:</div>
+                        <div class="swal-step">1. Ensure Raspberry Pi is powered ON and connected to Wi-Fi.</div>
+                        <div class="swal-step">2. Check SSH status on Pi: <code>sudo systemctl status ssh</code>.</div>
+                        <div class="swal-step">3. If running locally, confirm PC and Pi are on the same Wi-Fi.</div>
+                    </div>
+                </div>
+            `,
+            confirmButtonText: 'Open SSH Settings',
+            showCancelButton: true,
+            cancelButtonText: 'Close'
+        }).then((res) => {
+            if (res.isConfirmed) {
+                const settingsBtn = document.querySelector('[data-tab="tab-settings"]');
+                if (settingsBtn) settingsBtn.click();
+            }
+        });
     }
 
     // Quick Connect Button
