@@ -24,27 +24,36 @@ ssh_config = {
 # Track running execution tasks
 active_executions = {}  # execution_id -> {"client": SSHClient, "channel": Channel, "running": bool}
 
-def get_ssh_client(host=None, port=None, username=None, password=None, timeout=6):
-    """Creates a new paramiko SSH client connection."""
-    client = paramiko.SSHClient()
-    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    
+def get_ssh_client(host=None, port=None, username=None, password=None, timeout=5):
+    """Creates a new paramiko SSH client connection with smart multi-host fallback."""
     target_host = host or ssh_config["host"]
     target_port = int(port or ssh_config["port"])
     target_user = username or ssh_config["username"]
     target_pass = password or ssh_config["password"]
     
-    # Try hostname first, fallback to IP if needed
-    try:
-        client.connect(target_host, port=target_port, username=target_user, password=target_pass, timeout=timeout)
-    except Exception as e:
-        if target_host == "research.local":
-            # Fallback to direct IP seen on local network
-            client.connect("172.20.10.9", port=target_port, username=target_user, password=target_pass, timeout=timeout)
-        else:
-            raise e
+    # Candidate hosts to try in order
+    candidates = [target_host]
+    for fallback in ["research.local", "192.168.8.173", "172.20.10.9"]:
+        if fallback not in candidates:
+            candidates.append(fallback)
             
-    return client
+    last_exception = None
+    for candidate in candidates:
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        try:
+            client.connect(candidate, port=target_port, username=target_user, password=target_pass, timeout=timeout)
+            # Update working host in config
+            ssh_config["host"] = candidate
+            return client
+        except Exception as e:
+            last_exception = e
+            try:
+                client.close()
+            except:
+                pass
+                
+    raise last_exception if last_exception else Exception("Could not connect to Raspberry Pi on any known host IP.")
 
 @app.route('/')
 def index():
